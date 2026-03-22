@@ -1,121 +1,161 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from "react";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [note, setNote] = useState("");
+  const [notes, setNotes] = useState([]);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = "http://localhost:3000";
+
+  const getNotes = async () => {
+    try {
+      const res = await fetch(`${API_URL}/notes`);
+      const data = await res.json();
+      setNotes(data);
+    } catch (err) {
+      console.error("Error fetching notes:", err);
+    }
+  };
+
+  useEffect(() => {
+    getNotes();
+  }, []);
+
+  // ✏️ Create note
+  const handleCreateNote = async () => {
+    if (!note) return;
+
+    try {
+      const res = await fetch("http://localhost:3000/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: note }), // must match backend
+      });
+
+      const data = await res.json();
+      console.log("Created note:", data);
+
+      setNote(""); // clear input
+      getNotes(); // refresh notes list
+    } catch (err) {
+      console.error("Error creating note:", err);
+    }
+  };
+
+  // ❌ Delete note
+  const handleDelete = async (id) => {
+    try {
+      await fetch(`${API_URL}/notes/${id}`, {
+        method: "DELETE",
+      });
+
+      getNotes();
+    } catch (err) {
+      console.error("Error deleting note:", err);
+    }
+  };
+
+  // 🤖 Analyze note
+  const handleAnalyze = async (content) => {
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/notes/ai-process`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      const data = await res.json();
+      setResult(data);
+    } catch (error) {
+      console.error("Error analyzing note:", error);
+    }
+
+    setLoading(false);
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h1>🧠 Smart Notes AI</h1>
+
+      {/* ✏️ Create Note */}
+      <textarea
+        rows="5"
+        cols="60"
+        placeholder="Write your note..."
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+
+      <br />
+      <br />
+
+      <button onClick={handleCreateNote}>Save Note</button>
+
+      {/* 📋 Notes List */}
+      <h2 style={{ marginTop: "30px" }}>Your Notes</h2>
+
+      {notes.length === 0 && <p>No notes yet...</p>}
+
+      {notes.map((n) => (
+        <div
+          key={n._id}
+          style={{
+            border: "1px solid gray",
+            padding: "10px",
+            marginTop: "10px",
+            borderRadius: "5px",
+          }}
         >
-          Count is {count}
-        </button>
-      </section>
+          <p>{n.content}</p>
 
-      <div className="ticks"></div>
+          <button onClick={() => handleAnalyze(n.content)}>Analyze</button>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          <button
+            onClick={() => handleDelete(n._id)}
+            style={{ marginLeft: "10px" }}
+          >
+            Delete
+          </button>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      ))}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {/* 🤖 AI Result */}
+      {result && (
+        <div style={{ marginTop: "30px" }}>
+          <h2>Summary</h2>
+          <p>{result.summary}</p>
+
+          <h3>Key Points</h3>
+          <ul>
+            {result.key_points.map((p, i) => (
+              <li key={i}>{p}</li>
+            ))}
+          </ul>
+
+          <h3>🚀 Improve Next</h3>
+          <ul>
+            {result.next_topics.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+
+          <h3>Tags</h3>
+          <div>
+            {result.tags.map((tag, i) => (
+              <span key={i} style={{ marginRight: "8px" }}>
+                #{tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
